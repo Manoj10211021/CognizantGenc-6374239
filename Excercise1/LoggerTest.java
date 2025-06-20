@@ -1,30 +1,48 @@
 package Excercise1;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 public class LoggerTest {
     public static void main(String[] args) {
-        // Get the Logger instance multiple times
-        Logger logger1 = Logger.getInstance();
-        Logger logger2 = Logger.getInstance();
-        Logger logger3 = Logger.getInstance();
+        // Singleton verification
+        AppLogger logger1 = AppLogger.getInstance();
+        AppLogger logger2 = AppLogger.getInstance();
+        System.out.println("Is singleton? " + (logger1 == logger2));
         
-        // Test if all references point to the same object
-        System.out.println("logger1 == logger2: " + (logger1 == logger2));
-        System.out.println("logger2 == logger3: " + (logger2 == logger3));
+        // Basic logging
+        logger1.info("Application starting");
+        logger2.warn("Configuration not optimized");
         
-        // Use the logger
-        logger1.logInfo("Application started");
-        logger2.logWarning("Low memory detected");
-        logger3.logError("Failed to load configuration");
+        // Concurrent stress test
+        ExecutorService pool = Executors.newFixedThreadPool(10);
         
-        // Test in a multi-threaded environment
-        Runnable runnable = () -> {
-            Logger threadLogger = Logger.getInstance();
-            threadLogger.logInfo("Logging from thread: " + Thread.currentThread().getName());
-        };
+        for (int i = 0; i < 20; i++) {
+            final int taskId = i;
+            pool.execute(() -> {
+                AppLogger logger = AppLogger.getInstance();
+                logger.info("Task " + taskId + " started");
+                try {
+                    Thread.sleep(50);
+                    if (taskId % 4 == 0) {
+                        logger.warn("Task " + taskId + " experienced delay");
+                    }
+                } catch (InterruptedException e) {
+                    logger.error("Task " + taskId + " interrupted");
+                }
+                logger.info("Task " + taskId + " completed");
+            });
+        }
         
-        Thread thread1 = new Thread(runnable, "Thread-1");
-        Thread thread2 = new Thread(runnable, "Thread-2");
+        pool.shutdown();
+        try {
+            if (!pool.awaitTermination(1, TimeUnit.MINUTES)) {
+                AppLogger.getInstance().error("Thread pool timeout");
+            }
+        } catch (InterruptedException e) {
+            AppLogger.getInstance().error("Test interrupted");
+        }
         
-        thread1.start();
-        thread2.start();
+        System.out.println("Logging completed. Check app.log for results.");
     }
 }
