@@ -1,0 +1,18 @@
+package org.example;
+
+import org.example.service.BookService;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+public class LibraryManagementApplication {
+    public static void main(String[] args) {
+        // Load the Spring context
+        ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+
+        // Get BookService bean from Spring container
+        BookService bookService = context.getBean("bookService", BookService.class);
+
+        // Use the service to add a book
+        bookService.addBook("Spring Framework Basics");
+    }
+}
